@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Recover Map final logic</title>
     <style>
@@ -35,51 +36,50 @@
     <meta itemprop="name" content="Recover Map final logic">
     <meta itemprop="description" content="made with cables">
     <meta itemprop="image" content="screenshot.png">
-    <meta name="description" content="made with cables"/>
+    <meta name="description" content="made with cables" />
 
 </head>
+
 <body>
     <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
 
     
-    <script type="text/javascript" src="js/patch.js" async></script>
-    
+    <script type="text/javascript" src="js/libs.core.min.js"></script>
+<script type="text/javascript" src="js/cables.min.js"></script>
+<script type="text/javascript" src="js/ops.js"></script>
+
+    <script type="text/javascript"  src="js/ammoworld.js"></script>
+<script type="text/javascript"  src="js/cgl_light.js"></script>
+<script type="text/javascript"  src="js/cgl_cubemapframebuffer.js"></script>
+<script type="text/javascript"  src="js/cgl_shadermodifier.js"></script>
+<script type="text/javascript"  src="js/vargetset.js"></script>
+
 
     <script type="text/javascript">
+        // disable rubberband effect on mobile devices
+        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
 
-        function showError(errId, errMsg)
-        {
-            // handle critical errors here if needed
-        }
-
-        function patchInitialized(patch)
-        {
+        function patchInitialized(patch) {
             // You can now access the patch object (patch), register variable watchers and so on
         }
 
-        function patchFinishedLoading(patch)
-        {
+        function patchFinishedLoading(patch) {
             // The patch is ready now, all assets have been loaded
         }
 
-        document.addEventListener("CABLES.jsLoaded", function (event)
-        {
+        document.addEventListener('CABLES.jsLoaded', function (event) {
             CABLES.patch = new CABLES.Patch({
-                patch: CABLES.exportedPatch,
+                patchFile: 'js/Recover_Map_final_logic.json',
                 "prefixAssetPath": "",
                 "assetPath": "assets/",
                 "jsPath": "js/",
                 "glCanvasId": "glcanvas",
                 "glCanvasResizeToWindow": true,
-                "onError": showError,
                 "onPatchLoaded": patchInitialized,
                 "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true } // make canvas transparent
+                "canvas":{"alpha":true,"premultipliedAlpha":true} // make canvas transparent
             });
         });
-
-        // disable rubberband effect on mobile devices
-        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
     </script>
 </body>
 </html>
