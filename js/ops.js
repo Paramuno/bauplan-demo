@@ -2288,331 +2288,6 @@ CABLES.OPS["93492eeb-bf35-4a62-98f7-d85b0b79bfe5"]={f:Ops.Ui.Comment_v2,objName:
 
 // **************************************************************
 // 
-// Ops.Sidebar.Slider_v3
-// 
-// **************************************************************
-
-Ops.Sidebar.Slider_v3 = function()
-{
-CABLES.Op.apply(this,arguments);
-const op=this;
-const attachments={};
-// constants
-const STEP_DEFAULT = 0.00001;
-
-// inputs
-const parentPort = op.inObject("link");
-const labelPort = op.inString("Text", "Slider");
-const minPort = op.inValue("Min", 0);
-const maxPort = op.inValue("Max", 1);
-const stepPort = op.inValue("Step", STEP_DEFAULT);
-const labelSuffix = op.inString("Suffix", "");
-
-const inGreyOut = op.inBool("Grey Out", false);
-const inVisible = op.inBool("Visible", true);
-
-const inputValuePort = op.inValue("Input", 0.5);
-const setDefaultValueButtonPort = op.inTriggerButton("Set Default");
-const reset = op.inTriggerButton("Reset");
-
-let parent = null;
-
-const defaultValuePort = op.inValue("Default", 0.5);
-defaultValuePort.setUiAttribs({ "hidePort": true, "greyout": true });
-
-// outputs
-const siblingsPort = op.outObject("childs");
-const valuePort = op.outNumber("Result", defaultValuePort.get());
-
-op.toWorkNeedsParent("Ops.Sidebar.Sidebar");
-op.setPortGroup("Range", [minPort, maxPort, stepPort]);
-op.setPortGroup("Display", [inGreyOut, inVisible]);
-
-// vars
-const el = document.createElement("div");
-el.addEventListener("dblclick", function ()
-{
-    valuePort.set(parseFloat(defaultValuePort.get()));
-    inputValuePort.set(parseFloat(defaultValuePort.get()));
-});
-
-el.dataset.op = op.id;
-el.classList.add("cablesEle");
-
-el.classList.add("sidebar__item");
-el.classList.add("sidebar__slider");
-el.classList.add("sidebar__reloadable");
-
-op.patch.on("sidebarStylesChanged", () => { updateActiveTrack(); });
-
-const label = document.createElement("div");
-label.classList.add("sidebar__item-label");
-
-const greyOut = document.createElement("div");
-greyOut.classList.add("sidebar__greyout");
-el.appendChild(greyOut);
-greyOut.style.display = "none";
-
-const labelText = document.createTextNode(labelPort.get());
-label.appendChild(labelText);
-el.appendChild(label);
-
-const value = document.createElement("input");
-value.value = defaultValuePort.get();
-value.classList.add("sidebar__text-input-input");
-value.setAttribute("type", "text");
-value.oninput = onTextInputChanged;
-el.appendChild(value);
-
-const suffixEle = document.createElement("span");
-// setValueFieldValue(defaultValuePort).get();
-// value.setAttribute("type", "text");
-// value.oninput = onTextInputChanged;
-
-el.appendChild(suffixEle);
-
-labelSuffix.onChange = () =>
-{
-    suffixEle.innerHTML = labelSuffix.get();
-};
-
-const inputWrapper = document.createElement("div");
-inputWrapper.classList.add("sidebar__slider-input-wrapper");
-el.appendChild(inputWrapper);
-
-const activeTrack = document.createElement("div");
-activeTrack.classList.add("sidebar__slider-input-active-track");
-inputWrapper.appendChild(activeTrack);
-const input = document.createElement("input");
-input.classList.add("sidebar__slider-input");
-input.setAttribute("min", minPort.get());
-input.setAttribute("max", maxPort.get());
-input.setAttribute("type", "range");
-input.setAttribute("step", stepPort.get());
-input.setAttribute("value", defaultValuePort.get());
-input.style.display = "block"; /* needed because offsetWidth returns 0 otherwise */
-inputWrapper.appendChild(input);
-
-updateActiveTrack();
-input.addEventListener("input", onSliderInput);
-
-// events
-parentPort.onChange = onParentChanged;
-labelPort.onChange = onLabelTextChanged;
-inputValuePort.onChange = onInputValuePortChanged;
-defaultValuePort.onChange = onDefaultValueChanged;
-setDefaultValueButtonPort.onTriggered = onSetDefaultValueButtonPress;
-minPort.onChange = onMinPortChange;
-maxPort.onChange = onMaxPortChange;
-stepPort.onChange = stepPortChanged;
-op.onDelete = onDelete;
-
-// op.onLoadedValueSet=function()
-op.onLoaded = op.onInit = function ()
-{
-    if (op.patch.config.sidebar)
-    {
-        op.patch.config.sidebar[labelPort.get()];
-        valuePort.set(op.patch.config.sidebar[labelPort.get()]);
-    }
-    else
-    {
-        valuePort.set(parseFloat(defaultValuePort.get()));
-        inputValuePort.set(parseFloat(defaultValuePort.get()));
-        // onInputValuePortChanged();
-    }
-};
-
-reset.onTriggered = function ()
-{
-    const newValue = parseFloat(defaultValuePort.get());
-    valuePort.set(newValue);
-    setValueFieldValue(newValue);
-    setInputFieldValue(newValue);
-    inputValuePort.set(newValue);
-    updateActiveTrack();
-};
-
-inGreyOut.onChange = function ()
-{
-    greyOut.style.display = inGreyOut.get() ? "block" : "none";
-};
-
-inVisible.onChange = function ()
-{
-    el.style.display = inVisible.get() ? "block" : "none";
-};
-
-function onTextInputChanged(ev)
-{
-    let newValue = parseFloat(ev.target.value);
-    if (isNaN(newValue)) newValue = 0;
-    const min = minPort.get();
-    const max = maxPort.get();
-    if (newValue < min) { newValue = min; }
-    else if (newValue > max) { newValue = max; }
-    // setInputFieldValue(newValue);
-    valuePort.set(newValue);
-    updateActiveTrack();
-    inputValuePort.set(newValue);
-    op.refreshParams();
-}
-
-function onInputValuePortChanged()
-{
-    let newValue = parseFloat(inputValuePort.get());
-    const minValue = minPort.get();
-    const maxValue = maxPort.get();
-    if (newValue > maxValue) { newValue = maxValue; }
-    else if (newValue < minValue) { newValue = minValue; }
-    // setValueFieldValue(newValue);
-    setInputFieldValue(newValue);
-    valuePort.set(newValue);
-    updateActiveTrack();
-}
-
-function onSetDefaultValueButtonPress()
-{
-    let newValue = parseFloat(inputValuePort.get());
-    const minValue = minPort.get();
-    const maxValue = maxPort.get();
-    if (newValue > maxValue) { newValue = maxValue; }
-    else if (newValue < minValue) { newValue = minValue; }
-    setValueFieldValue(newValue);
-    setInputFieldValue(newValue);
-    valuePort.set(newValue);
-    defaultValuePort.set(newValue);
-    op.refreshParams();
-
-    updateActiveTrack();
-}
-
-function onSliderInput(ev)
-{
-    ev.preventDefault();
-    ev.stopPropagation();
-    setValueFieldValue(ev.target.value);
-    const inputFloat = parseFloat(ev.target.value);
-    valuePort.set(inputFloat);
-    inputValuePort.set(inputFloat);
-    op.refreshParams();
-
-    updateActiveTrack();
-    return false;
-}
-
-function stepPortChanged()
-{
-    const step = stepPort.get();
-    input.setAttribute("step", step);
-    updateActiveTrack();
-}
-
-function updateActiveTrack(val)
-{
-    let valueToUse = parseFloat(input.value);
-    if (typeof val !== "undefined") valueToUse = val;
-    let availableWidth = activeTrack.parentElement.getBoundingClientRect().width || 220;
-    if (parent) availableWidth = parseInt(getComputedStyle(parent.parentElement).getPropertyValue("--sidebar-width")) - 20;
-
-    const trackWidth = CABLES.map(
-        valueToUse,
-        parseFloat(input.min),
-        parseFloat(input.max),
-        0,
-        availableWidth - 16 /* subtract slider thumb width */
-    );
-    activeTrack.style.width = trackWidth + "px";
-}
-
-function onMinPortChange()
-{
-    const min = minPort.get();
-    input.setAttribute("min", min);
-    updateActiveTrack();
-}
-
-function onMaxPortChange()
-{
-    const max = maxPort.get();
-    input.setAttribute("max", max);
-    updateActiveTrack();
-}
-
-function onDefaultValueChanged()
-{
-    const defaultValue = defaultValuePort.get();
-    valuePort.set(parseFloat(defaultValue));
-    onMinPortChange();
-    onMaxPortChange();
-    setInputFieldValue(defaultValue);
-    setValueFieldValue(defaultValue);
-
-    updateActiveTrack(defaultValue); // needs to be passed as argument, is this async?
-}
-
-function onLabelTextChanged()
-{
-    const labelText = labelPort.get();
-    label.textContent = labelText;
-    if (CABLES.UI) op.setTitle("Slider: " + labelText);
-}
-
-function onParentChanged()
-{
-    siblingsPort.set(null);
-    parent = parentPort.get();
-    if (parent && parent.parentElement)
-    {
-        parent.parentElement.appendChild(el);
-        siblingsPort.set(parent);
-    }
-    else if (el.parentElement) el.parentElement.removeChild(el);
-
-    updateActiveTrack();
-}
-
-function setValueFieldValue(v)
-{
-    value.value = v;
-}
-
-function setInputFieldValue(v)
-{
-    input.value = v;
-}
-
-function showElement(el)
-{
-    if (el)el.style.display = "block";
-}
-
-function hideElement(el)
-{
-    if (el)el.style.display = "none";
-}
-
-function onDelete()
-{
-    removeElementFromDOM(el);
-}
-
-function removeElementFromDOM(el)
-{
-    if (el && el.parentNode && el.parentNode.removeChild) el.parentNode.removeChild(el);
-}
-
-
-};
-
-Ops.Sidebar.Slider_v3.prototype = new CABLES.Op();
-CABLES.OPS["74730122-5cba-4d0d-b610-df334ec6220a"]={f:Ops.Sidebar.Slider_v3,objName:"Ops.Sidebar.Slider_v3"};
-
-
-
-
-// **************************************************************
-// 
 // Ops.Sidebar.Incrementor_v2
 // 
 // **************************************************************
@@ -13301,6 +12976,417 @@ render.onTriggered = function ()
 
 Ops.Gl.TextureEffects.FastBlur.prototype = new CABLES.Op();
 CABLES.OPS["720ca148-dcf7-433b-bb1f-edbfb7433c6c"]={f:Ops.Gl.TextureEffects.FastBlur,objName:"Ops.Gl.TextureEffects.FastBlur"};
+
+
+
+
+// **************************************************************
+// 
+// Ops.Gl.Meshes.Circle_v2
+// 
+// **************************************************************
+
+Ops.Gl.Meshes.Circle_v2 = function()
+{
+CABLES.Op.apply(this,arguments);
+const op=this;
+const attachments={};
+const
+    render = op.inTrigger("render"),
+    radius = op.inValue("radius", 0.5),
+    innerRadius = op.inValueSlider("innerRadius", 0),
+    segments = op.inValueInt("segments", 40),
+    percent = op.inValueSlider("percent", 1),
+    steps = op.inValue("steps", 0),
+    invertSteps = op.inValueBool("invertSteps", false),
+    mapping = op.inSwitch("mapping", ["flat", "round"]),
+    drawSpline = op.inValueBool("Spline", false),
+    inDraw = op.inValueBool("Draw", true),
+    trigger = op.outTrigger("trigger"),
+    geomOut = op.outObject("geometry", null, "geometry");
+
+op.setPortGroup("Size", [radius, innerRadius]);
+op.setPortGroup("Display", [percent, steps, invertSteps]);
+op.toWorkShouldNotBeChild("Ops.Gl.TextureEffects.ImageCompose", CABLES.OP_PORT_TYPE_FUNCTION);
+
+inDraw.setUiAttribs({ "title": "Render mesh" });
+
+mapping.set("flat");
+
+mapping.onChange =
+    segments.onChange =
+    radius.onChange =
+    innerRadius.onChange =
+    percent.onChange =
+    steps.onChange =
+    invertSteps.onChange =
+    drawSpline.onChange = calcLater;
+
+geomOut.ignoreValueSerialize = true;
+const cgl = op.patch.cgl;
+
+let geom = new CGL.Geometry("circle");
+let mesh = null;
+const lastSegs = -1;
+
+let oldPrim = 0;
+let shader = null;
+let needsCalc = true;
+
+render.onTriggered = renderMesh;
+
+op.preRender = () =>
+{
+    renderMesh();
+};
+
+render.onLinkChanged = function ()
+{
+    if (!render.isLinked()) geomOut.set(null);
+    else geomOut.setRef(geom);
+};
+
+function renderMesh()
+{
+    if (needsCalc)calc();
+
+    if (!CGL.TextureEffect.checkOpNotInTextureEffect(op)) return;
+
+    shader = cgl.getShader();
+    if (!shader) return;
+    oldPrim = shader.glPrimitive;
+
+    if (drawSpline.get()) shader.glPrimitive = cgl.gl.LINE_STRIP;
+
+    if (inDraw.get())mesh.render(shader);
+    trigger.trigger();
+
+    shader.glPrimitive = oldPrim;
+}
+
+function calc()
+{
+    const segs = Math.max(3, Math.floor(segments.get()));
+
+    geom.clear();
+
+    const faces = [];
+    const texCoords = [];
+    const vertexNormals = [];
+    const tangents = [];
+    const biTangents = [];
+
+    let i = 0, degInRad = 0;
+    let oldPosX = 0, oldPosY = 0;
+    let oldPosXTexCoord = 0, oldPosYTexCoord = 0;
+
+    let oldPosXIn = 0, oldPosYIn = 0;
+    let oldPosXTexCoordIn = 0, oldPosYTexCoordIn = 0;
+
+    let posxTexCoordIn = 0, posyTexCoordIn = 0;
+    let posxTexCoord = 0, posyTexCoord = 0;
+    let posx = 0, posy = 0;
+
+    const perc = Math.max(0.0, percent.get());
+    const verts = [];
+
+    if (drawSpline.get())
+    {
+        let lastX = 0;
+        let lastY = 0;
+        const tc = [];
+        for (i = 0; i <= segs * perc; i++)
+        {
+            degInRad = (360 / segs) * i * CGL.DEG2RAD;
+            posx = Math.cos(degInRad) * radius.get();
+            posy = Math.sin(degInRad) * radius.get();
+
+            posyTexCoord = 0.5;
+
+            if (i > 0)
+            {
+                verts.push(lastX);
+                verts.push(lastY);
+                verts.push(0);
+                posxTexCoord = 1.0 - (i - 1) / segs;
+
+                tc.push(posxTexCoord, posyTexCoord);
+            }
+            verts.push(posx);
+            verts.push(posy);
+            verts.push(0);
+
+            lastX = posx;
+            lastY = posy;
+        }
+        geom.setPointVertices(verts);
+    }
+    else
+    if (innerRadius.get() <= 0)
+    {
+        for (i = 0; i <= segs * perc; i++)
+        {
+            degInRad = (360 / segs) * i * CGL.DEG2RAD;
+            posx = Math.cos(degInRad) * radius.get();
+            posy = Math.sin(degInRad) * radius.get();
+
+            if (mapping.get() == "flat")
+            {
+                posxTexCoord = (Math.cos(degInRad) + 1.0) / 2;
+                posyTexCoord = 1.0 - (Math.sin(degInRad) + 1.0) / 2;
+                posxTexCoordIn = 0.5;
+                posyTexCoordIn = 0.5;
+            }
+            else if (mapping.get() == "round")
+            {
+                posxTexCoord = 1.0 - i / segs;
+                posyTexCoord = 0;
+                posxTexCoordIn = posxTexCoord;
+                posyTexCoordIn = 1;
+            }
+
+            faces.push(
+                [0, 0, 0],
+                [oldPosX, oldPosY, 0],
+                [posx, posy, 0]
+            );
+
+            texCoords.push(
+                posxTexCoordIn, posyTexCoordIn,
+                oldPosXTexCoord, oldPosYTexCoord,
+                posxTexCoord, posyTexCoord
+            );
+            vertexNormals.push(0, 0, 1, 0, 0, 1, 0, 0, 1);
+            tangents.push(1, 0, 0, 1, 0, 0, 1, 0, 0);
+            biTangents.push(0, -1, 0, 0, -1, 0, 0, -1, 0);
+
+            oldPosXTexCoord = posxTexCoord;
+            oldPosYTexCoord = posyTexCoord;
+
+            oldPosX = posx;
+            oldPosY = posy;
+        }
+
+        geom = CGL.Geometry.buildFromFaces(faces, "circle");
+        geom.vertexNormals = vertexNormals;
+        geom.tangents = tangents;
+        geom.biTangents = biTangents;
+        geom.texCoords = texCoords;
+    }
+    else
+    {
+        let count = 0;
+        const numSteps = segs * perc;
+        const pos = 0;
+
+        for (i = 0; i <= numSteps; i++)
+        {
+            count++;
+
+            degInRad = (360 / segs) * i * CGL.DEG2RAD;
+            posx = Math.cos(degInRad) * radius.get();
+            posy = Math.sin(degInRad) * radius.get();
+
+            const posxIn = Math.cos(degInRad) * innerRadius.get() * radius.get();
+            const posyIn = Math.sin(degInRad) * innerRadius.get() * radius.get();
+
+            if (mapping.get() == "round")
+            {
+                posxTexCoord = 1.0 - i / segs;
+                posyTexCoord = 0;
+                posxTexCoordIn = posxTexCoord;
+                posyTexCoordIn = 1;
+            }
+
+            if (steps.get() === 0.0 ||
+                (count % parseInt(steps.get(), 10) === 0 && !invertSteps.get()) ||
+                (count % parseInt(steps.get(), 10) !== 0 && invertSteps.get()))
+            {
+                faces.push(
+                    [posx, posy, 0],
+                    [oldPosX, oldPosY, 0],
+                    [posxIn, posyIn, 0]
+                );
+
+                faces.push(
+                    [posxIn, posyIn, 0],
+                    [oldPosX, oldPosY, 0],
+                    [oldPosXIn, oldPosYIn, 0]
+                );
+
+                texCoords.push(
+                    posxTexCoord, 0,
+                    oldPosXTexCoord, 0,
+                    posxTexCoordIn, 1,
+
+                    posxTexCoord, 1,
+                    oldPosXTexCoord, 0,
+                    oldPosXTexCoordIn, 1);
+
+                vertexNormals.push(
+                    0, 0, 1, 0, 0, 1, 0, 0, 1,
+                    0, 0, 1, 0, 0, 1, 0, 0, 1
+                );
+                tangents.push(
+                    1, 0, 0, 1, 0, 0, 1, 0, 0,
+                    1, 0, 0, 1, 0, 0, 1, 0, 0
+                );
+                biTangents.push(
+                    0, 0, -1, 0, 0, -1, 0, 0, -1,
+                    0, 0, -1, 0, 0, -1, 0, 0, -1
+                );
+            }
+
+            oldPosXTexCoordIn = posxTexCoordIn;
+            oldPosYTexCoordIn = posyTexCoordIn;
+
+            oldPosXTexCoord = posxTexCoord;
+            oldPosYTexCoord = posyTexCoord;
+
+            oldPosX = posx;
+            oldPosY = posy;
+
+            oldPosXIn = posxIn;
+            oldPosYIn = posyIn;
+        }
+
+        geom = CGL.Geometry.buildFromFaces(faces, "circle");
+        geom.vertexNormals = vertexNormals;
+        geom.tangents = tangents;
+        geom.biTangents = biTangents;
+
+        if (mapping.get() == "flat") geom.mapTexCoords2d();
+        else geom.texCoords = texCoords;
+    }
+
+    geomOut.setRef(geom);
+
+    if (geom.vertices.length == 0) return;
+    if (mesh) mesh.dispose();
+    mesh = null;
+    mesh = op.patch.cg.createMesh(geom);
+    needsCalc = false;
+}
+
+function calcLater()
+{
+    needsCalc = true;
+}
+
+op.onDelete = function ()
+{
+    if (mesh)mesh.dispose();
+};
+
+
+};
+
+Ops.Gl.Meshes.Circle_v2.prototype = new CABLES.Op();
+CABLES.OPS["641eaae4-37cc-4e80-b8db-4be283ed5573"]={f:Ops.Gl.Meshes.Circle_v2,objName:"Ops.Gl.Meshes.Circle_v2"};
+
+
+
+
+// **************************************************************
+// 
+// Ops.Cables.LoadingStatus_v2
+// 
+// **************************************************************
+
+Ops.Cables.LoadingStatus_v2 = function()
+{
+CABLES.Op.apply(this,arguments);
+const op=this;
+const attachments={};
+const
+    exe = op.inTrigger("exe"),
+    preRenderOps = op.inValueBool("PreRender Ops"),
+    startTimeLine = op.inBool("Play Timeline", true),
+    next = op.outTrigger("Next"),
+    outInitialFinished = op.outBoolNum("Finished Initial Loading", false),
+    outLoading = op.outBoolNum("Loading"),
+    outProgress = op.outNumber("Progress"),
+    outList = op.outArray("Jobs"),
+    loadingFinished = op.outTrigger("Trigger Loading Finished ");
+
+const cgl = op.patch.cgl;
+const patch = op.patch;
+
+let finishedOnce = false;
+const preRenderTimes = [];
+let firstTime = true;
+
+document.body.classList.add("cables-loading");
+
+let loadingId = cgl.patch.loading.start("loadingStatusInit", "loadingStatusInit", op);
+
+exe.onTriggered = () =>
+{
+    const jobs = op.patch.loading.getListJobs();
+    outProgress.set(patch.loading.getProgress());
+
+    let hasFinished = jobs.length === 0;
+    const notFinished = !hasFinished;
+    // outLoading.set(!hasFinished);
+
+    if (notFinished)
+    {
+        outList.set(op.patch.loading.getListJobs());
+    }
+
+    if (notFinished)
+    {
+        if (firstTime)
+        {
+            if (preRenderOps.get()) op.patch.preRenderOps();
+
+            op.patch.timer.setTime(0);
+            if (startTimeLine.get())
+            {
+                op.patch.timer.play();
+            }
+            else
+            {
+                op.patch.timer.pause();
+            }
+        }
+        firstTime = false;
+
+        document.body.classList.remove("cables-loading");
+        document.body.classList.add("cables-loaded");
+    }
+    else
+    {
+        finishedOnce = true;
+        outList.set(op.patch.loading.getListJobs());
+        if (patch.loading.getProgress() < 1.0)
+        {
+            op.patch.timer.setTime(0);
+            op.patch.timer.pause();
+        }
+    }
+
+    outInitialFinished.set(finishedOnce);
+
+    if (outLoading.get() && hasFinished) loadingFinished.trigger();
+
+    outLoading.set(notFinished);
+    op.setUiAttribs({ "loading": notFinished });
+
+    next.trigger();
+
+    if (loadingId)
+    {
+        cgl.patch.loading.finished(loadingId);
+        loadingId = null;
+    }
+};
+
+
+};
+
+Ops.Cables.LoadingStatus_v2.prototype = new CABLES.Op();
+CABLES.OPS["e62f7f4c-7436-437e-8451-6bc3c28545f7"]={f:Ops.Cables.LoadingStatus_v2,objName:"Ops.Cables.LoadingStatus_v2"};
 
 
 

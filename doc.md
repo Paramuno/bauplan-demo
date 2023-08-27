@@ -67,7 +67,7 @@
 * __lungMaxStillTime__ ```Number```
 * __lungMemory__ ```Number```
 * __lungStillTime__ ```Number```
-* __maskk__ ```Texture``` (default Value: `null`)
+* __maskk__ ```Texture```
 * __metaBlur__ ```Number```
 * __newBauplan loop__ ```Number```
 * __onTile__ ```Number```
